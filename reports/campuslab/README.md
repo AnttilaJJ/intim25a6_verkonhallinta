@@ -1,0 +1,1 @@
+Pareina tehdyssä campuslabin työssä olivat Tomi Tuomi sekä Leevi Kuokkanen.
