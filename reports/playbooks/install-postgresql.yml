@@ -1,0 +1,44 @@
+---
+- name: Install postgresql and add an user
+  hosts: db1
+  become: true
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    - name: Update package cache
+      apt:
+        update_cache: yes
+
+    - name: Install postgres and psycopg2 library
+      ansible.builtin.apt:
+        name:
+          - postgresql
+          - python3-psycopg2
+        state: present
+
+    - name: Ensure postgresql service is running
+      ansible.builtin.command: /etc/init.d/postgresql start
+      register: pg_start
+      become: true
+      changed_when: "'Starting' in pg_start.stdout or 'already running' not in pg_start.stdout"
+
+    - name: Configure PostgreSQL access
+      ansible.builtin.lineinfile:
+        path: /etc/postgresql/16/main/pg_hba.conf
+        regexp: '^host\s+all\s+all\s+127\.0\.0\.1/32\s+scram-sha-256$'
+        line: 'host    all             all             127.0.0.1/32            trust'
+      
+    - name: Restart PostgreSQL service
+      ansible.builtin.command: /etc/init.d/postgresql restart
+
+    - name: Create a new user
+      ansible.builtin.postgresql_user:
+        name: myuser
+        password: mypassword
+        state: present
+
+    - name: Show verification result
+      debug:
+        msg: "Postgresql running on {{ inventory_hostname }}"
